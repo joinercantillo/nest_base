@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateBrandDto } from './dto/create-brand.dto.js';
 import { UpdateBrandDto } from './dto/update-brand.dto.js';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,23 +12,21 @@ export class BrandService {
     private readonly brandRepository: Repository<Brand>,
   ) {}
 
-  async create(createBrandDto: CreateBrandDto) {
-    if (!createBrandDto) {
-      return {
-        message: 'Error: falta nombre de la marca',
-      };
+    async create(createBrandDto: CreateBrandDto) {
+    try {
+      const temporalBrand = this.brandRepository.create(createBrandDto);
+
+      const newBrand = await this.brandRepository.save(temporalBrand);
+
+      return newBrand;
+    } catch (error: any) {
+      const { code, detail } = error;
+
+      if ( code === '23505') {
+        throw new BadRequestException(detail);
+      }
     }
-
-    const temporalBrand = this.brandRepository.create(createBrandDto);
-    // Se debe usar await para esperar a que se guarde en la BD
-    const newBrand = await this.brandRepository.save(temporalBrand);
-
-    return {
-      message: 'Marca creada con exito',
-      brand: newBrand,
-    };
   }
-
   async findAll() {
     // Retornamos todas las marcas de la base de datos
     return await this.brandRepository.find();
